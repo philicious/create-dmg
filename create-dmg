@@ -147,6 +147,12 @@ test -f "${DMG_TEMP_NAME}" && rm -f "${DMG_TEMP_NAME}"
 ACTUAL_SIZE=`du -sm "$SRC_FOLDER" | sed -e 's/	.*//g'`
 DISK_IMAGE_SIZE=$(expr $ACTUAL_SIZE + 20)
 hdiutil create -srcfolder "$SRC_FOLDER" -volname "${VOLUME_NAME}" -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW "${DMG_TEMP_NAME}"
+MIN_SIZE=`hdiutil resize -limits "${DMG_TEMP_NAME}" | tail -n1 | awk '{print $1}'`
+MIN_SIZE=$(($MIN_SIZE*512/1024/1024))
+if (( DISK_IMAGE_SIZE < MIN_SIZE )); then
+  echo "Size of source folder $DISK_IMAGE_SIZE is below allowed disk image minimum $MIN_SIZE . Using the minimum limit for resize"
+  DISK_IMAGE_SIZE=$(expr $MIN_SIZE + 1)
+fi
 hdiutil resize -size ${DISK_IMAGE_SIZE}m "${DMG_TEMP_NAME}"
 
 # mount it
